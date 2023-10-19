@@ -22,6 +22,11 @@ auth_enabled: false
 server:
   http_listen_port: 3100
   grpc_listen_port: 9096
+  http_server_write_timeout: 310s
+  http_server_read_timeout: 310s
+
+ingester:
+  chunk_encoding: snappy
 
 common:
   instance_addr: 127.0.0.1
@@ -34,8 +39,17 @@ common:
   ring:
     kvstore:
       store: inmemory
+
+
+
+
+
+
 querier:
-  max_concurrent: 16
+  max_concurrent: 8
+  query_timeout: 300s
+  engine:
+    timeout: 300s
 query_range:
   results_cache:
     cache:
@@ -55,7 +69,8 @@ schema_config:
       index:
         prefix: index_
         period: 24h
-
+frontend_worker:
+  match_max_concurrent: true
 ruler:
   alertmanager_url: http://127.0.0.1:9093
 
@@ -86,20 +101,13 @@ scrape_configs:
           reason:
           proto:
           dept:
-          reqmethod:
-          respcode:
-          riskscore:
-          location:
 
     - labels:
         action: action
         reason: reason
         proto: proto
-        location: location
         dept: dept
-        reqmethod: reqmethod
-        respcode: respcode
-        riskscore: riskscore
+
         
     relabel_configs:
       - source_labels: [__syslog_message_hostname]
