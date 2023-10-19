@@ -1,21 +1,22 @@
 #!/bin/bash
 
 apt upgrade -y && apt upgrade -y
-apt-get install -y apt-transport-https software-properties-common wget curl
+apt install -y apt-transport-https software-properties-common wget curl
 sudo mkdir -p /etc/apt/keyrings/ 
 wget -q -O - https://apt.grafana.com/gpg.key | gpg --dearmor | sudo tee /etc/apt/keyrings/grafana.gpg > /dev/null
 echo "deb [signed-by=/etc/apt/keyrings/grafana.gpg] https://apt.grafana.com stable main" | sudo tee -a /etc/apt/sources.list.d/grafana.list
-apt-get update -y
-apt-get install grafana-enterprise -y
+apt update -y
+apt install grafana-enterprise -y
 systemctl daemon-reload
 systemctl start grafana-server
 systemctl enable grafana-server.service
-apt-get update -y
-apt-get install loki promtail syslog-ng -y
+apt update -y
+apt install loki promtail syslog-ng -y
 systemctl enable loki
 systemctl enable promtail
 systemctl stop loki
 systemctl stop promtail
+systemctl stop syslog-ng
 cat > /etc/loki/config.yml << EOF
 auth_enabled: false
 server:
@@ -67,6 +68,7 @@ ruler:
 analytics:
   reporting_enabled: false
 EOF
+
 cat > /etc/promtail/config.yml << EOF
 server:
   http_listen_port: 9080
@@ -103,8 +105,9 @@ scrape_configs:
       - source_labels: [__syslog_message_hostname]
         target_label: host
 EOF
+
 cat > /etc/syslog-ng/syslog-ng.conf << EOF
-@version: 3.27
+@version: 3.35
 @include "scl.conf"
 
 # Syslog-ng configuration file, compatible with default Debian syslogd
@@ -174,7 +177,7 @@ destination d_console { usertty("root"); };
 
 # Virtual console.
 #
-destination d_console_all { file(`tty10`); };
+destination d_console_all { file("tty10"); };
 
 # The named pipe /dev/xconsole is for the nsole' utility.  To use it,
 # you must invoke nsole' with the -file' option:
@@ -264,7 +267,6 @@ log { source(s_src); filter(f_crit); destination(d_console); };
 destination d_loki {
         syslog("127.0.0.1" transport("tcp") port(1514));
     };
-    
 log {
 	source(s_net);
 	destination(d_loki);
