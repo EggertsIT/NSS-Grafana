@@ -1,0 +1,34 @@
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /var/tmp/promtail-syslog-positions.yml
+
+clients:
+  - url: loki:3100/loki/api/v1/push
+
+scrape_configs:
+  - job_name: zscaler
+    syslog:
+      listen_address: syslog-ng:1514
+      labels:
+        job: zscaler
+    pipeline_stages:
+    - logfmt:
+        mapping:
+          action:
+          reason:
+          proto:
+          dept:
+
+    - labels:
+        action: action
+        reason: reason
+        proto: proto
+        dept: dept
+
+        
+    relabel_configs:
+      - source_labels: [__syslog_message_hostname]
+        target_label: host
